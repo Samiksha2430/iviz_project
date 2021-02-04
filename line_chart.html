@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Line graph</title>
+      <style>
+         svg {
+    font-family: Sans-Serif, Arial;
+}
+.line {
+  stroke-width: 2;
+  fill: none;
+}
+
+.axis path {
+  stroke: black;
+}
+
+.text {
+  font-size: 12px;
+}
+
+.title-text {
+  font-size: 12px;
+} 
+      </style>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+  </head>
+  <body>
+    <h1 style="margin-left:100px;margin-bottom:-20px ;">Accidents in UT's (2015-2018)</h1>
+    <div id="chart"></div>
+    <script>
+      //Filling the data
+        var data = [
+        {
+                    name: "Andaman & Nicobar Islands",
+                    values: [
+                        {date: "2015", accidents: "22"},
+                        {date: "2016", accidents: "16"},
+                        {date: "2017", accidents: "20"},
+                        {date: "2018", accidents: "18"},
+                    ]
+                },
+                {
+                    name: "Chandigarh",
+                    values: [
+                        {date: "2015", accidents: "124"},
+                        {date: "2016", accidents: "144"},
+                        {date: "2017", accidents: "103"},
+                        {date: "2018", accidents: "97"},
+                    ]
+                },
+                {
+                    name: "Dadra and Nagar Haveli",
+                    values: [
+                        {date: "2015", accidents: "36"},
+                        {date: "2016", accidents: "40"},
+                        {date: "2017", accidents: "40"},
+                        {date: "2018", accidents: "52"},
+                    ]
+                },
+                {
+                    name: "Daman and Diu",
+                    values: [
+                        {date: "2015", accidents: "38"},
+                        {date: "2016", accidents: "32"},
+                        {date: "2017", accidents: "36"},
+                        {date: "2018", accidents: "34"},
+                    ]
+                },
+                {
+                    name: "Delhi",
+                    values: [
+                        {date: "2015", accidents: "1582"},
+                        {date: "2016", accidents: "1548"},
+                        {date: "2017", accidents: "1565"},
+                        {date: "2018", accidents: "1657"},
+                    ]
+                },
+                {
+                    name: "Lakshadweep",
+                    values: [
+                        {date: "2015", accidents: "0"},
+                        {date: "2016", accidents: "1"},
+                        {date: "2017", accidents: "0"},
+                        {date: "2018", accidents: "1"},
+                    ]
+                },
+                {
+                    name: "Puducherry",
+                    values: [
+                        {date: "2015", accidents: "229"},
+                        {date: "2016", accidents: "235"},
+                        {date: "2017", accidents: "221"},
+                        {date: "2018", accidents: "225"},
+                    ]
+                }
+
+];
+
+var width = 500;
+var height = 300;
+var margin = 50;
+var duration = 250;
+
+//variables for lines
+var lineOpacity = "0.25";
+var lineOpacityHover = "0.85";
+var otherLinesOpacityHover = "0.1";
+var lineStroke = "1.5px";
+var lineStrokeHover = "2.5px";
+
+//variables for dots in lines
+var circleOpacity = '0.85';
+var circleOpacityOnLineHover = "0.25"
+var circleRadius = 3;
+var circleRadiusHover = 6;
+
+
+// Format Data 
+var parseDate = d3.timeParse("%Y");
+data.forEach(function(d) { 
+  d.values.forEach(function(d) {
+    d.date = parseDate(d.date);
+    d.accidents = +d.accidents;    
+  });
+});
+
+
+// Scale 
+var xScale = d3.scaleTime()
+  .domain(d3.extent(data[0].values, d => d.date))
+  .range([0, width-margin]);
+
+var yScale = d3.scaleLinear()
+  .domain([0, 250])
+  .range([height-margin, 0]);
+
+var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+// Add SVG 
+var svg = d3.select("#chart").append("svg")
+  .attr("width", (width+margin)+"px")
+  .attr("height", (height+margin)+"px")
+  .append('g')
+  .attr("transform", `translate(${margin}, ${margin})`);
+
+
+// Add line into SVG 
+var line = d3.line()
+  .x(d => xScale(d.date))
+  .y(d => yScale(d.accidents));
+
+let lines = svg.append('g')
+  .attr('class', 'lines');
+
+  //Adding events 
+lines.selectAll('.line-group')
+  .data(data).enter()
+  .append('g')
+  .attr('class', 'line-group')  
+  .on("mouseover", function(d, i) {
+      svg.append("text")
+        .attr("class", "title-text")
+        .style("fill", color(i))        
+        .text(d.name)
+        .attr("text-anchor", "middle")
+        .attr("x", (width-margin)/2)
+        .attr("y", 5);
+    })
+  .on("mouseout", function(d) {
+      svg.select(".title-text").remove();
+    })
+  .append('path')
+  .attr('class', 'line')  
+  .attr('d', d => line(d.values))
+  .style('stroke', (d, i) => color(i))
+  .style('opacity', lineOpacity)
+  .on("mouseover", function(d) {
+      d3.selectAll('.line')
+					.style('opacity', otherLinesOpacityHover);
+      d3.selectAll('.circle')
+					.style('opacity', circleOpacityOnLineHover);
+      d3.select(this)
+        .style('opacity', lineOpacityHover)
+        .style("stroke-width", lineStrokeHover)
+        .style("cursor", "pointer");
+    })
+  .on("mouseout", function(d) {
+      d3.selectAll(".line")
+					.style('opacity', lineOpacity);
+      d3.selectAll('.circle')
+					.style('opacity', circleOpacity);
+      d3.select(this)
+        .style("stroke-width", lineStroke)
+        .style("cursor", "none");
+    });
+
+
+// Add circles in the line 
+lines.selectAll("circle-group")
+  .data(data).enter()
+  .append("g")
+  .style("fill", (d, i) => color(i))
+  .selectAll("circle")
+  .data(d => d.values).enter()
+  .append("g")
+  .attr("class", "circle")  
+  .on("mouseover", function(d) {
+      d3.select(this)     
+        .style("cursor", "pointer")
+        .append("text")
+        .attr("class", "text")
+        .text(`${d.accidents}`)
+        .attr("x", d => xScale(d.date) + 5)
+        .attr("y", d => yScale(d.accidents) - 10);
+    })
+  .on("mouseout", function(d) {
+      d3.select(this)
+        .style("cursor", "none")  
+        .transition()
+        .duration(duration)
+        .selectAll(".text").remove();
+    })
+  .append("circle")
+  .attr("cx", d => xScale(d.date))
+  .attr("cy", d => yScale(d.accidents))
+  .attr("r", circleRadius)
+  .style('opacity', circleOpacity)
+  .on("mouseover", function(d) {
+        d3.select(this)
+          .transition()
+          .duration(duration)
+          .attr("r", circleRadiusHover);
+      })
+    .on("mouseout", function(d) {
+        d3.select(this) 
+          .transition()
+          .duration(duration)
+          .attr("r", circleRadius);  
+      });
+
+
+// Add Axis into SVG 
+var xAxis = d3.axisBottom(xScale).ticks(4);
+var yAxis = d3.axisLeft(yScale).ticks(16);
+
+svg.append("g")
+  .attr("class", "x axis")
+  .attr("transform", `translate(0, ${height-margin})`)
+  .call(xAxis)
+         .append("text")
+         .attr("y", height - 250)
+         .attr("x", width - 200)
+         //.attr("text-anchor", "front")
+         .attr("stroke", "black")
+         .text("Year")
+         .style("font", "20px times");
+
+svg.append("g")
+  .attr("class", "y axis")
+  .call(yAxis)
+  .append('text')
+  .attr("y", 15)
+  .attr("transform", "rotate(-90)")
+  .attr("fill", "#000")
+  .text("Accidents")
+
+    </script>
+  </body>
+</html>
